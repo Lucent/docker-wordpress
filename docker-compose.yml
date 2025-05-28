@@ -29,6 +29,8 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME',   'https://${DOMAIN}/');
         define('WP_SITEURL','https://${DOMAIN}/');
+    extra_hosts:
+      - "${DOMAIN}:127.0.0.1"
     volumes:
       - ./wp-content:/var/www/html/wp-content
       - ./certs:/var/lib/apache-md
