@@ -1,0 +1,3 @@
+[mariadb]
+max_connections = 50
+innodb_buffer_pool_size = 512M
