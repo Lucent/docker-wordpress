@@ -32,25 +32,23 @@ source .env
 backblaze-b2 authorize-account "$B2_APPLICATION_KEY_ID" "$B2_APPLICATION_KEY"
 idle() { nice -n 19 ionice -c 3 "$@"; }
 
-STAMP=$(date +%Y%m%d)
-BASE="${DOMAIN}-${STAMP}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 # Database dump (uncompressed copy stays in ./db-dump/)
 SEED_SQL="db-dump/${DOMAIN}.sql"
-echo "[$STAMP] Dumping database..."
+echo "Dumping database..."
 docker compose exec -T db mariadb-dump \
   --single-transaction \
   -u "$WORDPRESS_DB_USER" \
   -p"$WORDPRESS_DB_PASSWORD" \
   "$WORDPRESS_DB_NAME" > "$SEED_SQL"
 
-SQL_XZ="${TMPDIR}/${BASE}.sql.xz"
+SQL_XZ="${TMPDIR}/${DOMAIN}.sql.xz"
 echo "Compressing SQL…"
 idle xz -T0 -9 "$SEED_SQL" -c > "$SQL_XZ"
 
-CONTENT_XZ="$TMPDIR/${BASE}.tar.xz"
+CONTENT_XZ="$TMPDIR/${DOMAIN}.tar.xz"
 echo "Archiving wp-content..."
 idle tar --exclude='wp-content/cache/*' --warning=no-file-changed -cJf "$CONTENT_XZ" wp-content || [[ $? -eq 1 ]]
 
@@ -62,8 +60,8 @@ classes=(daily)
 # Upload to B2
 echo "Uploading to B2 bucket $B2_BUCKET..."
 for c in "${classes[@]}"; do
-	backblaze-b2 upload-file --noProgress "$B2_BUCKET" "$SQL_XZ" "${c}/${DOMAIN}/${BASE}.sql.xz"
-	backblaze-b2 upload-file --noProgress "$B2_BUCKET" "$CONTENT_XZ" "${c}/${DOMAIN}/${BASE}.tar.xz"
+	backblaze-b2 upload-file --noProgress "$B2_BUCKET" "$SQL_XZ" "${c}/${DOMAIN}/${DOMAIN}.sql.xz"
+	backblaze-b2 upload-file --noProgress "$B2_BUCKET" "$CONTENT_XZ" "${c}/${DOMAIN}/${DOMAIN}.tar.xz"
 done
 
 echo "Pinging healthcheck..."
