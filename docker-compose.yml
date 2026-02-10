@@ -13,15 +13,11 @@ services:
       - ./conf/mariadb:/etc/mysql/conf.d:ro
 
   wordpress:
-    build: .
-    ports:
-      - "80:80"
-      - "443:443"
+    image: wordpress:fpm-alpine
     restart: always
     depends_on:
       - db
     environment:
-      DOMAIN: ${DOMAIN}
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -30,11 +26,31 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME',   'https://${DOMAIN}/');
         define('WP_SITEURL','https://${DOMAIN}/');
-    extra_hosts:
-      - "${DOMAIN}:127.0.0.1"
     volumes:
+      - wordpress_files:/var/www/html
       - ./wp-content:/var/www/html/wp-content
+      - ./conf/php/tweaks.ini:/usr/local/etc/php/conf.d/tweaks.ini:ro
+      - ./conf/php/fpm.conf:/usr/local/etc/php-fpm.d/zzz-tuning.conf:ro
+
+  httpd:
+    build: .
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+    depends_on:
+      - wordpress
+    environment:
+      DOMAIN: ${DOMAIN}
+    networks:
+      default:
+        aliases:
+          - ${DOMAIN}
+    volumes:
+      - wordpress_files:/var/www/html:ro
+      - ./wp-content:/var/www/html/wp-content:ro
       - ./certs:/var/lib/apache-md
 
 volumes:
   db_data:
+  wordpress_files:

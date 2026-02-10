@@ -2,3 +2,5 @@
 certs/
 db-dump/
 wp-content/
+conf/php/fpm.conf
+conf/mariadb/50-memory.cnf
