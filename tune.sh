@@ -47,10 +47,12 @@ MAX_CHILDREN=$(( (USABLE - FIXED) / (CHILD_MB + PER_CONN_MB) ))
 MAX_CHILDREN=$((MAX_CHILDREN < 4  ? 4  : MAX_CHILDREN))
 MAX_CHILDREN=$((MAX_CHILDREN > 16 ? 16 : MAX_CHILDREN))
 
-START=$((MAX_CHILDREN / 4))
-START=$((START < 1 ? 1 : START))
+MIN_SPARE=2
 MAX_SPARE=$((MAX_CHILDREN / 2))
-MAX_SPARE=$((MAX_SPARE < 2 ? 2 : MAX_SPARE))
+MAX_SPARE=$((MAX_SPARE < MIN_SPARE ? MIN_SPARE : MAX_SPARE))
+START=$((MAX_CHILDREN / 4))
+START=$((START < MIN_SPARE ? MIN_SPARE : START))
+START=$((START > MAX_SPARE ? MAX_SPARE : START))
 
 MAX_CONN=$((MAX_CHILDREN + ADMIN_CONNS))
 
@@ -66,7 +68,7 @@ echo ""
 echo "PHP-FPM:"
 echo "  pm.max_children:     ${MAX_CHILDREN}"
 echo "  pm.start_servers:    ${START}"
-echo "  pm.min_spare_servers: 2"
+echo "  pm.min_spare_servers: ${MIN_SPARE}"
 echo "  pm.max_spare_servers: ${MAX_SPARE}"
 echo "  pm.max_requests:     500"
 echo ""
@@ -111,7 +113,7 @@ cat > conf/php/fpm.conf <<EOF
 [www]
 pm.max_children = ${MAX_CHILDREN}
 pm.start_servers = ${START}
-pm.min_spare_servers = 2
+pm.min_spare_servers = ${MIN_SPARE}
 pm.max_spare_servers = ${MAX_SPARE}
 pm.max_requests = 500
 EOF
